@@ -11,38 +11,39 @@ app = Flask(__name__)
 #####################
 
 # Histogram dan Boxplot func
-def category_plot(cat_plot = 'histoplot', cat_x = 'sex', cat_y = 'total_bill', estimator = 'count'):
+def category_plot(cat_plot = 'histoplot', cat_x = 'sex', cat_y = 'total_bill', estimator = 'count', hue = 'smoker'):
     
     dfTips = sns.load_dataset('tips')
 
     if cat_plot == 'histoplot':
-        data = [
+        data = []
 
-            go.Histogram(
+        for val in dfTips[hue].unique(): # [No, Yes]
+            hist = go.Histogram(
+                
+                    x = dfTips[dfTips[hue] == val][cat_x],
+                    y = dfTips[dfTips[hue] == val][cat_y],
+                    histfunc = 'count',
+                    name = val
 
-                x = dfTips[cat_x],
-
-                y = dfTips[cat_y],
-
-                histfunc = estimator
-
-            )
-
-        ]
+                    )
+            
+            data.append(hist)
 
         title = 'HISTOGRAM'
     else:
-        data = [
+        data = []
 
-            go.Box(
+        for val in dfTips[hue].unique(): # [No, Yes]
+            hist = go.Box(
+                
+                    x = dfTips[dfTips[hue] == val][cat_x],
+                    y = dfTips[dfTips[hue] == val][cat_y],
+                    name = val
 
-                x = dfTips[cat_x],
-
-                y = dfTips[cat_y],
-
-            )
-
-        ]
+                    )
+            
+            data.append(hist)
 
         title = "BOXPLOT"
 
@@ -55,6 +56,8 @@ def category_plot(cat_plot = 'histoplot', cat_x = 'sex', cat_y = 'total_bill', e
         xaxis = dict(title = cat_x),
 
         yaxis = dict(title = cat_y),
+
+        boxmode = 'group'
 
     )
 
@@ -168,19 +171,41 @@ def cat_fn():
     cat_x = request.args.get('cat_x')
     cat_y = request.args.get('cat_y')
     estimator = request.args.get('estimator')
+    hue = request.args.get('hue')
 
-    if cat_plot == None and cat_x == None and cat_y == None and estimator == None:
+    if cat_plot == None and cat_x == None and cat_y == None and estimator == None and hue == None:
         cat_plot = 'histoplot'
         cat_x = 'sex'
         cat_y = 'total_bill'
         estimator = 'count'
+        hue = 'smoker'
 
     if estimator == None:
         estimator = 'count'
 
-    plot = category_plot(cat_plot, cat_x, cat_y, estimator)
+    plot = category_plot(cat_plot, cat_x, cat_y, estimator, hue)
 
-    return render_template('category.html', plot = plot, focus_plot = cat_plot, focus_x = cat_x, focus_y = cat_y, focus_estimator = estimator)
+    # List dropdown
+    drop_plot_src = [('histoplot', 'Histogram'), ('boxplot', 'Boxplot')]
+    drop_x_src = [('sex', 'Sex'), ('smoker', 'Smoker'), ('day', 'Day'), ('time', 'Time')]
+    drop_y_src = [('total_bill', 'Total Bill'), ('tip', 'Tip'), ('size', 'size')]
+    drop_est_src = [('count', 'Count'), ('sum', 'Sum'), ('avg', 'Average'), ('min', 'Minimum'), ('max', 'Maximum')]
+
+    return render_template(
+        'category.html', 
+        plot = plot, 
+        focus_plot = cat_plot, 
+        focus_x = cat_x, 
+        focus_y = cat_y, 
+        focus_estimator = estimator,
+        focus_hue = hue,
+        drop_plot = drop_plot_src,
+        drop_x = drop_x_src,
+        drop_y = drop_y_src,
+        drop_est = drop_est_src,
+        drop_hue = drop_x_src
+
+    )
 
 @app.route('/scat_fn')
 def scat_fn():
@@ -191,6 +216,7 @@ def scat_fn():
     if cat_x == None and cat_y == None:
         cat_x = 'total_bill'
         cat_y = 'tip'
+
     plot = scatter_plot(cat_x, cat_y)
 
     return render_template('scatter.html', plot = plot, focus_x = cat_x, focus_y = cat_y)
