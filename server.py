@@ -2,18 +2,26 @@ from flask import Flask, render_template, request
 import seaborn as sns
 import plotly
 import plotly.graph_objs as go
-import json 
+import json
+from sqlalchemy import create_engine
+import pymysql 
+import pandas as pd
 
 app = Flask(__name__)
 
-#####################
-# FUNCTION FOR PLOT #
-#####################
+# Sumber data dari sql
+sqlEngine = create_engine('mysql+pymysql://root:mysql123@127.0.0.1', pool_recycle = 3306)
+dbConnection = sqlEngine.connect()
+dfTips = pd.read_sql('SELECT * FROM flaskapp.tips', dbConnection)
+
+#######################
+## FUNCTION FOR PLOT ##
+#######################
 
 # Histogram dan Boxplot func
 def category_plot(cat_plot = 'histoplot', cat_x = 'sex', cat_y = 'total_bill', estimator = 'count', hue = 'smoker'):
     
-    dfTips = sns.load_dataset('tips')
+    
 
     if cat_plot == 'histoplot':
         data = []
@@ -23,7 +31,7 @@ def category_plot(cat_plot = 'histoplot', cat_x = 'sex', cat_y = 'total_bill', e
                 
                     x = dfTips[dfTips[hue] == val][cat_x],
                     y = dfTips[dfTips[hue] == val][cat_y],
-                    histfunc = 'count',
+                    # histfunc = 'count',
                     name = val
 
                     )
@@ -69,9 +77,7 @@ def category_plot(cat_plot = 'histoplot', cat_x = 'sex', cat_y = 'total_bill', e
 
 # Scatter Plot func
 def scatter_plot(cat_x, cat_y):
-    # sumber data
-    dfTips = sns.load_dataset('tips')
-
+    
     # Masukan data
     data_src = [
         
@@ -111,7 +117,6 @@ def scatter_plot(cat_x, cat_y):
 # Pie plot func
 def pie_plot(cat):
     
-    dfTips = sns.load_dataset('tips')
     result = dfTips[cat].value_counts()
     
     labels = []
@@ -179,9 +184,6 @@ def cat_fn():
         cat_y = 'total_bill'
         estimator = 'count'
         hue = 'smoker'
-
-    if estimator == None:
-        estimator = 'count'
 
     plot = category_plot(cat_plot, cat_x, cat_y, estimator, hue)
 
